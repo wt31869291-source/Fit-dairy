@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>健康日記 - Health Diary</title>
+    <style>
+        /* --- 1. 不傷眼莫蘭迪配色方案 --- */
+        :root {
+            --bg-color: #fdfcf8;      /* 米白色背景 */
+            --text-color: #4a4a4a;    /* 深碳灰文字 */
+            --primary-green: #a3b18a; /* 鼠尾草綠 (飲食) */
+            --primary-blue: #9eb3c2;  /* 霧霾藍 (運動/水) */
+            --period-pink: #eac4d5;   /* 玫瑰粉 (生理期) */
+            --warning-orange: #e6a27e;/* 磚橘色 (警示) */
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding-bottom: 80px; /* 為底部導覽留空間 */
+            line-height: 1.6;
+        }
+
+        /* --- 2. 佈局組件 --- */
+        header {
+            padding: 20px;
+            background: var(--card-bg);
+            border-bottom: 1px solid #eee;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .coach-advice {
+            background-color: #f0f4f0;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            border-left: 5px solid var(--primary-green);
+        }
+
+        .dashboard-card {
+            margin: 15px;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        /* --- 3. 月曆樣式 --- */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            padding: 10px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            position: relative;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .calendar-day.today {
+            border: 2px solid var(--primary-blue);
+        }
+
+        .calendar-day.selected {
+            background-color: #ececec;
+        }
+
+        .dot-warning { width: 5px; height: 5px; background: red; border-radius: 50%; position: absolute; top: 5px; right: 5px; }
+        .icon-gym { font-size: 0.7rem; margin-top: 2px; }
+
+        /* --- 4. 底部導覽列 --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            height: 70px;
+            background: var(--card-bg);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #eee;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.7rem;
+            color: #888;
+            text-decoration: none;
+        }
+
+        .nav-item.active { color: var(--primary-blue); }
+        .nav-icon { font-size: 1.5rem; margin-bottom: 2px; }
+
+        /* --- 5. 工具類 --- */
+        .hidden { display: none; }
+        .btn {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="page-home" class="page">
+        <header>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin:0;">健康日記</h2>
+                <span id="current-date" style="font-size: 0.9rem; color: #888;">2026-01-21</span>
+            </div>
+            <div class="coach-advice" id="smart-advice">
+                今天也要記得喝水喔！適度的運動能讓你心情更好。❤️
+            </div>
+        </header>
+
+        <div class="dashboard-card">
+            <h3>今日摘要</h3>
+            <div style="display: flex; justify-content: space-around; text-align: center;">
+                <div>
+                    <div style="font-size: 1.2rem; font-weight: bold; color: var(--primary-blue);">0</div>
+                    <small>消耗 kcal</small>
+                </div>
+                <div>
+                    <div style="font-size: 1.2rem; font-weight: bold; color: var(--primary-green);">0</div>
+                    <small>飲水 mL</small>
+                </div>
+                <div>
+                    <div style="font-size: 1.2rem; font-weight: bold;">--</div>
+                    <small>目前體重</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-record" class="page hidden">
+        <header><h3>選擇日期</h3></header>
+        <div class="dashboard-card" style="padding: 10px;">
+            <div id="calendar" class="calendar-grid">
+                </div>
+        </div>
+        <div id="day-summary" class="dashboard-card">
+            <h4>當日摘要</h4>
+            <p id="summary-text">請點擊日期查看摘要，再次點擊進入編輯。</p>
+            <button class="btn" id="enter-edit-btn" style="display: none;">進入詳細紀錄</button>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item active" onclick="showPage('home')">
+            <span class="nav-icon">🏠</span>
+            <span>首頁</span>
+        </a>
+        <a href="#" class="nav-item" onclick="showPage('record')">
+            <span class="nav-icon">📝</span>
+            <span>紀錄</span>
+        </a>
+        <a href="#" class="nav-item" onclick="showPage('chart')">
+            <span class="nav-icon">📈</span>
+            <span>圖表</span>
+        </a>
+        <a href="#" class="nav-item" onclick="showPage('profile')">
+            <span class="nav-icon">👤</span>
+            <span>個人</span>
+        </a>
+    </nav>
+
+    <script>
+        // --- 核心邏輯：頁面切換 ---
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+            const targetPage = document.getElementById('page-' + pageId);
+            if(targetPage) targetPage.classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            // 這裡可以根據點擊對象設定 active
+        }
+
+        // --- 月曆生成邏輯 (簡化版) ---
+        function generateCalendar() {
+            const calendarEl = document.getElementById('calendar');
+            let daysHtml = '';
+            const today = new Date().getDate();
+            
+            for (let i = 1; i <= 31; i++) {
+                const isToday = i === today ? 'today' : '';
+                daysHtml += `
+                    <div class="calendar-day ${isToday}" onclick="handleDayClick(this, ${i})">
+                        ${i}
+                        ${i === 15 ? '<div class="dot-warning"></div>' : ''}
+                        ${i === today ? '<div class="icon-gym">🏋️</div>' : ''}
+                    </div>
+                `;
+            }
+            calendarEl.innerHTML = daysHtml;
+        }
+
+        let lastClickedDay = null;
+        function handleDayClick(el, day) {
+            if (lastClickedDay === day) {
+                alert('進入 ' + day + ' 日的詳細編輯頁面 (吃、喝、動、量)');
+                // 這裡之後串接垂直紀錄頁
+            } else {
+                // 單擊選取
+                document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
+                el.classList.add('selected');
+                document.getElementById('summary-text').innerText = `1月 ${day} 日：今日攝取 1200kcal，運動消耗 200kcal，水分 1500mL。`;
+                document.getElementById('enter-edit-btn').style.display = 'block';
+                lastClickedDay = day;
+            }
+        }
+
+        // 初始化
+        window.onload = () => {
+            generateCalendar();
+            // 設定正確日期
+            const now = new Date();
+            document.getElementById('current-date').innerText = now.toISOString().split('T')[0];
+        };
+    </script>
+</body>
+</html>
