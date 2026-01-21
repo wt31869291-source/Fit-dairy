@@ -4,51 +4,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>健康日記</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #fdfcf8; --text: #4a4a4a; --green: #a3b18a; --blue: #9eb3c2; --pink: #eac4d5; --orange: #e6a27e; --card: #ffffff; }
         body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; }
-        .page { display: none; padding: 15px; animation: fadeIn 0.3s; }
+        .page { display: none; padding: 15px; }
         .active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; }
         
-        /* 月曆 */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-        .day { aspect-ratio: 1; border: 1px solid #f0f0f0; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.8rem; cursor: pointer; position: relative; background: #fff; }
-        .day.today { border: 2px solid var(--blue); font-weight: bold; color: var(--blue); }
-        .day.selected { background: #eee; }
-        .dots { display: flex; gap: 2px; position: absolute; bottom: 3px; }
-        .dot { width: 4px; height: 4px; border-radius: 50%; }
-
-        /* 輸入框與建議清單 */
-        .input-group { margin-bottom: 15px; position: relative; }
-        label { display: block; font-size: 0.85rem; margin-bottom: 5px; font-weight: bold; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        .suggestions { position: absolute; background: white; width: 100%; z-index: 10; border: 1px solid #ddd; border-radius: 8px; max-height: 150px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .sug-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; }
-        .sug-item:hover { background: #f0f4f0; }
-
-        /* 導覽 */
-        .nav { position: fixed; bottom: 0; width: 100%; height: 70px; background: white; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #eee; }
+        /* 導覽列 */
+        .nav { position: fixed; bottom: 0; width: 100%; height: 70px; background: white; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #eee; z-index: 1000; }
         .nav-item { text-decoration: none; font-size: 1.5rem; color: #aaa; text-align: center; }
         .nav-item.active { color: var(--blue); }
+        .nav-item span { display: block; font-size: 0.65rem; }
+
+        /* 月曆 */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+        .day { aspect-ratio: 1/1.2; border: 1px solid #f0f0f0; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.8rem; cursor: pointer; background: #fff; }
+        .day.today { border: 2px solid var(--blue); background: #f0faff; }
+        .day.selected { background: #e0e0e0; }
+
+        /* 輸入框 */
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.85rem; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
         .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        
+        /* 運動紀錄項 */
+        .sport-item { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; align-items: center; justify-content: space-between; }
+        .sport-inputs { display: flex; gap: 5px; width: 120px; }
+        .sport-inputs input { padding: 5px; text-align: center; }
     </style>
 </head>
 <body>
 
     <div id="home" class="page active">
         <div class="card">
-            <h2>🏠 健康日記</h2>
-            <div id="coach" style="padding:10px; border-left:4px solid var(--green); background:#f0f4f0;">載入建議中...</div>
+            <h2>健康日記</h2>
+            <div id="coach" style="padding:10px; border-left:4px solid var(--green); background:#f8faf8; border-radius: 4px;">載入智慧建議中...</div>
         </div>
         <div class="card" style="text-align: center;">
             <div style="font-size: 0.9rem; color: #888;">今日剩餘熱量</div>
             <div style="font-size: 2.8rem; font-weight: bold; color: var(--green);" id="rem-kcal">--</div>
             <div style="display:flex; justify-content: space-around; margin-top:15px;">
-                <div>攝取 <br><b id="h-eat">0</b></div>
-                <div>消耗 <br><b id="h-burn">0</b></div>
-                <div>水 <br><b id="h-water">0</b></div>
+                <div>攝取<br><b id="h-eat">0</b></div>
+                <div>水 (ml)<br><b id="h-water">0</b></div>
+                <div>體重<br><b id="h-weight">--</b></div>
             </div>
         </div>
     </div>
@@ -56,68 +57,80 @@
     <div id="record" class="page">
         <div class="card"><div class="calendar-grid" id="cal"></div></div>
         <div id="edit-area" class="card" style="display:none;">
-            <h3 id="date-title">日期</h3>
-            <label><input type="checkbox" id="is-period"> 🌸 生理期</label>
-            <div class="input-group">
-                <label>食物搜尋 (如: 炒青菜)</label>
-                <input type="text" id="food-search" placeholder="輸入關鍵字..." oninput="searchFood(this.value)">
-                <div id="food-sugs" class="suggestions" style="display:none;"></div>
-                <div id="food-list" style="margin-top:10px; font-size:0.8rem; color:#666;"></div>
+            <h3 id="date-title">編輯日期</h3>
+            
+            <label>🍕 飲食紀錄 (搜尋或手動輸入熱量)</label>
+            <div style="display:flex; gap:5px; margin-bottom:10px;">
+                <input type="text" id="food-search" placeholder="搜尋食物..." style="flex:2;">
+                <input type="number" id="manual-kcal" placeholder="kcal" style="flex:1;">
+                <button onclick="addFood()" style="background:var(--blue); color:white; border:none; border-radius:8px; padding:0 15px;">+</button>
             </div>
-            <div class="input-group">
-                <label>運動</label>
-                <select id="sport-select"></select>
-                <input type="number" id="sport-time" placeholder="分鐘">
+            <div id="food-log" style="font-size:0.85rem; color:#666; margin-bottom:15px;"></div>
+
+            <label>🏋️ 運動紀錄 (搜尋部位或名稱)</label>
+            <input type="text" id="sport-search" placeholder="搜尋: 臀 / 腹 / 啞鈴..." oninput="filterSports(this.value)" style="margin-bottom:10px;">
+            <div id="sport-container" style="max-height: 250px; overflow-y: auto; border: 1px solid #eee; padding: 5px; border-radius: 8px;">
+                </div>
+
+            <label style="margin-top:15px;">💧 飲水量 (ml)</label>
+            <input type="number" id="in-water">
+
+            <label style="margin-top:15px;">⚖️ 體重紀錄 (kg)</label>
+            <div style="display:flex; gap:5px;"><input type="number" id="w-m" placeholder="AM 空腹"><input type="number" id="w-n" placeholder="PM 睡前"></div>
+
+            <label style="margin-top:15px;">📏 身形圍度 (cm)</label>
+            <div style="display:flex; gap:5px;">
+                <input type="number" id="s-waist" placeholder="腰圍">
+                <input type="number" id="s-hip" placeholder="臀圍">
+                <input type="number" id="s-leg" placeholder="腿圍">
             </div>
-            <div class="input-group">
-                <label>飲水 (mL)</label>
-                <input type="number" id="in-water">
-            </div>
-            <div class="input-group">
-                <label>體重 (kg)</label>
-                <div style="display:flex; gap:5px;"><input type="number" id="w-m" placeholder="空腹"><input type="number" id="w-n" placeholder="睡前"></div>
-            </div>
-            <div class="input-group">
-                <label>身形圍度 (cm)</label>
-                <div style="display:flex; gap:5px;"><input type="number" id="s-waist" placeholder="腰圍"><input type="number" id="s-hip" placeholder="臀圍"><input type="number" id="s-leg" placeholder="腿圍"></div>
-            </div>
-            <button class="btn" style="background:var(--blue); color:white;" onclick="saveDay()">儲存今日數據</button>
+
+            <button class="btn" style="background:var(--blue); color:white;" onclick="saveDay()">確認儲存</button>
+        </div>
+    </div>
+
+    <div id="chart" class="page">
+        <div class="card">
+            <h3>體重波動趨勢</h3>
+            <canvas id="weightChart"></canvas>
+        </div>
+        <div class="card">
+            <h3>熱量攝取分析</h3>
+            <canvas id="kcalChart"></canvas>
         </div>
     </div>
 
     <div id="profile" class="page">
         <div class="card">
-            <h3>👤 個人資料</h3>
-            <div class="input-group"><label>性別</label><select id="p-gen"><option value="F">女</option><option value="M">男</option></select></div>
-            <div class="input-group"><label>生日</label><input type="date" id="p-bday"></div>
-            <div class="input-group"><label>身高 (cm)</label><input type="number" id="p-h"></div>
-            <div class="input-group"><label>體重 (kg)</label><input type="number" id="p-w"></div>
-            <button class="btn" style="background:var(--green); color:white;" onclick="saveProfile()">儲存並計算代謝</button>
-        </div>
-        <div class="card">
-            <h3>🏃 自訂運動清單</h3>
-            <div class="input-group">
-                <input type="text" id="custom-sport-name" placeholder="名稱 (如: 跳繩)">
-                <input type="number" id="custom-sport-met" placeholder="消耗係數 (中強度填 6)">
-                <button class="btn" onclick="addCustomSport()">新增運動</button>
-            </div>
-            <div id="custom-list"></div>
+            <h3>個人資料</h3>
+            <label>性別</label><select id="p-gen"><option value="F">女</option><option value="M">男</option></select>
+            <label>生日</label><input type="date" id="p-bday">
+            <label>身高 (cm)</label><input type="number" id="p-h">
+            <label>體重 (kg)</label><input type="number" id="p-w">
+            <button class="btn" style="background:var(--green); color:white;" onclick="saveProfile()">更新個人資料</button>
         </div>
     </div>
 
     <nav class="nav">
         <a href="#" class="nav-item active" onclick="nav('home')">🏠<span>首頁</span></a>
         <a href="#" class="nav-item" onclick="nav('record')">📝<span>紀錄</span></a>
+        <a href="#" class="nav-item" onclick="nav('chart')">📈<span>圖表</span></a>
         <a href="#" class="nav-item" onclick="nav('profile')">👤<span>個人</span></a>
     </nav>
 
     <script>
-        // 資料庫與初始化
-        let db = JSON.parse(localStorage.getItem('health_db')) || {};
-        let prof = JSON.parse(localStorage.getItem('health_prof')) || { sports: [] };
+        let db = JSON.parse(localStorage.getItem('hd_v2_db')) || {};
+        let prof = JSON.parse(localStorage.getItem('hd_v2_prof')) || { gen: 'F', bday: '', h: 160, w: 55 };
         let selectedDate = "";
-        const foodDB = [
-            {n:"炒青菜", k:100}, {n:"排骨麵", k:600}, {n:"牛肉麵", k:800}, {n:"菠蘿麵包", k:350}, {n:"雞胸肉", k:165}, {n:"白飯", k:280}
+        let currentDayFoodKcal = 0;
+
+        const sportsDB = [
+            {n:"啞鈴負重深蹲", t:"臀腿"}, {n:"啞鈴夾胸", t:"胸"}, {n:"啞鈴劃船", t:"背"}, {n:"左右側抬腿", t:"腿"},
+            {n:"跪式前後俯臥撐", t:"腹"}, {n:"俯臥後抬腿", t:"臀"}, {n:"腳心開合", t:"腿"}, {n:"跪姿左右抬腿", t:"腰腹"},
+            {n:"跪姿後抬腿(直)", t:"下臀"}, {n:"跪姿彎曲抬腿", t:"上臀"}, {n:"啞鈴W型外推", t:"手臂"}, {n:"臀橋", t:"臀"},
+            {n:"啞鈴側平舉", t:"肩"}, {n:"啞鈴硬拉", t:"臀"}, {n:"彈力帶前後繞肩", t:"肩背"}, {n:"彈力帶高位下拉", t:"肩背"},
+            {n:"彈力帶左右側拉", t:"手胸"}, {n:"左右腿分蹲", t:"臀"}, {n:"腳尖交叉點地", t:"腹"}, {n:"交替收腿", t:"腹"},
+            {n:"屈膝捲腹", t:"腹"}, {n:"直腿捲腹", t:"腹"}, {n:"自行車捲腹", t:"腹"}, {n:"剪刀腿", t:"腹"}
         ];
 
         function nav(p) {
@@ -125,68 +138,35 @@
             document.querySelectorAll('.nav-item').forEach(ni => ni.classList.remove('active'));
             document.getElementById(p).classList.add('active');
             event.currentTarget.classList.add('active');
-            if(p==='home') updateHome();
-            if(p==='record') renderCal();
-            if(p==='profile') loadProfile();
+            if(p === 'home') updateHome();
+            if(p === 'record') renderCal();
+            if(p === 'chart') renderCharts();
         }
 
-        // --- 個人資料與自訂功能 ---
-        function saveProfile() {
-            prof.gen = document.getElementById('p-gen').value;
-            prof.bday = document.getElementById('p-bday').value;
-            prof.h = Number(document.getElementById('p-h').value);
-            prof.w = Number(document.getElementById('p-w').value);
-            localStorage.setItem('health_prof', JSON.stringify(prof));
-            alert("個人資料已永久儲存！");
-        }
-
-        function loadProfile() {
-            document.getElementById('p-gen').value = prof.gen || 'F';
-            document.getElementById('p-bday').value = prof.bday || '';
-            document.getElementById('p-h').value = prof.h || '';
-            document.getElementById('p-w').value = prof.w || '';
-            renderCustomSports();
-        }
-
-        function addCustomSport() {
-            const name = document.getElementById('custom-sport-name').value;
-            const met = document.getElementById('custom-sport-met').value;
-            if(name && met) {
-                prof.sports.push({ name, met: Number(met) });
-                localStorage.setItem('health_prof', JSON.stringify(prof));
-                renderCustomSports();
-            }
-        }
-
-        function renderCustomSports() {
-            const list = document.getElementById('custom-list');
-            const select = document.getElementById('sport-select');
-            list.innerHTML = '';
-            select.innerHTML = '<option value="0">選擇運動...</option>';
-            prof.sports.forEach((s, i) => {
-                list.innerHTML += `<div>${s.name} (係數:${s.met}) <button onclick="prof.sports.splice(${i},1);localStorage.setItem('health_prof',JSON.stringify(prof));renderCustomSports();">刪除</button></div>`;
-                select.innerHTML += `<option value="${s.met}">${s.name}</option>`;
+        function filterSports(q) {
+            const container = document.getElementById('sport-container');
+            container.innerHTML = '';
+            sportsDB.filter(s => s.n.includes(q) || s.t.includes(q)).forEach(s => {
+                container.innerHTML += `
+                    <div class="sport-item">
+                        <span>[${s.t}] ${s.n}</span>
+                        <div class="sport-inputs">
+                            <input type="number" placeholder="下" id="s-${s.n}-r">
+                            <input type="number" placeholder="組" id="s-${s.n}-s">
+                        </div>
+                    </div>`;
             });
         }
 
-        // --- 食物搜尋邏輯 ---
-        let currentDayKcal = 0;
-        function searchFood(q) {
-            const sug = document.getElementById('food-sugs');
-            if(!q) { sug.style.display='none'; return; }
-            const matches = foodDB.filter(f => f.n.includes(q));
-            sug.innerHTML = matches.map(f => `<div class="sug-item" onclick="pickFood('${f.n}', ${f.k})">${f.n} (${f.k}卡)</div>`).join('');
-            sug.style.display = matches.length ? 'block' : 'none';
+        function addFood() {
+            let val = Number(document.getElementById('manual-kcal').value);
+            if(val > 0) {
+                currentDayFoodKcal += val;
+                document.getElementById('food-log').innerHTML += `<div>手動新增: +${val} kcal</div>`;
+                document.getElementById('manual-kcal').value = '';
+            }
         }
 
-        function pickFood(name, kcal) {
-            currentDayKcal += kcal;
-            document.getElementById('food-list').innerHTML += `<div>${name} +${kcal}卡</div>`;
-            document.getElementById('food-search').value = '';
-            document.getElementById('food-sugs').style.display = 'none';
-        }
-
-        // --- 紀錄儲存 ---
         function renderCal() {
             const cal = document.getElementById('cal'); cal.innerHTML = '';
             const todayStr = new Date().toISOString().split('T')[0];
@@ -196,70 +176,86 @@
                 let el = document.createElement('div');
                 el.className = `day ${todayStr===d?'today':''} ${selectedDate===d?'selected':''}`;
                 el.innerHTML = i;
-                if(has) {
-                    el.innerHTML += `<div class="dots">` + 
-                        (has.food > 0 ? `<div class="dot" style="background:red"></div>` : '') +
-                        (has.water > 0 ? `<div class="dot" style="background:blue"></div>` : '') + `</div>`;
-                }
-                el.onclick = () => { selectedDate=d; document.getElementById('edit-area').style.display='block'; document.getElementById('date-title').innerText=d; loadDayData(d); renderCal(); };
+                if(has && has.food > 0) el.innerHTML += `<div style="width:5px;height:5px;background:red;border-radius:50%;margin-top:2px;"></div>`;
+                el.onclick = () => { selectedDate=d; document.getElementById('edit-area').style.display='block'; document.getElementById('date-title').innerText=d; loadDay(d); renderCal(); };
                 cal.appendChild(el);
             }
         }
 
-        function loadDayData(d) {
-            let data = db[d] || { food:0, water:0, wm:0, wn:0, waist:0, hip:0, leg:0, period:false };
-            currentDayKcal = data.food;
-            document.getElementById('food-list').innerHTML = data.food ? `今日已計: ${data.food}卡` : '';
-            document.getElementById('in-water').value = data.water || "";
-            document.getElementById('w-m').value = data.wm || "";
-            document.getElementById('w-n').value = data.wn || "";
-            document.getElementById('s-waist').value = data.waist || "";
-            document.getElementById('s-hip').value = data.hip || "";
-            document.getElementById('s-leg').value = data.leg || "";
-            document.getElementById('is-period').checked = data.period || false;
+        function loadDay(d) {
+            let data = db[d] || { food:0, water:0, wm:0, wn:0, waist:0, hip:0, leg:0 };
+            currentDayFoodKcal = data.food;
+            document.getElementById('food-log').innerHTML = data.food ? `今日已計: ${data.food} kcal` : '';
+            document.getElementById('in-water').value = data.water || '';
+            document.getElementById('w-m').value = data.wm || '';
+            document.getElementById('w-n').value = data.wn || '';
+            document.getElementById('s-waist').value = data.waist || '';
+            document.getElementById('s-hip').value = data.hip || '';
+            document.getElementById('s-leg').value = data.leg || '';
+            filterSports(''); // 重置運動列表
         }
 
         function saveDay() {
-            const met = Number(document.getElementById('sport-select').value);
-            const time = Number(document.getElementById('sport-time').value);
-            const burn = prof.w ? (met * prof.w * (time/60)) : 0;
-
             db[selectedDate] = {
-                food: currentDayKcal,
+                food: currentDayFoodKcal,
                 water: Number(document.getElementById('in-water').value),
                 wm: Number(document.getElementById('w-m').value),
                 wn: Number(document.getElementById('w-n').value),
                 waist: Number(document.getElementById('s-waist').value),
                 hip: Number(document.getElementById('s-hip').value),
-                leg: Number(document.getElementById('s-leg').value),
-                period: document.getElementById('is-period').checked,
-                burn: burn
+                leg: Number(document.getElementById('s-leg').value)
             };
-            localStorage.setItem('health_db', JSON.stringify(db));
-            alert("今日紀錄已永久儲存！");
+            localStorage.setItem('hd_v2_db', JSON.stringify(db));
+            alert("儲存成功！");
+            updateHome();
             renderCal();
+        }
+
+        function saveProfile() {
+            prof.gen = document.getElementById('p-gen').value;
+            prof.bday = document.getElementById('p-bday').value;
+            prof.h = Number(document.getElementById('p-h').value);
+            prof.w = Number(document.getElementById('p-w').value);
+            localStorage.setItem('hd_v2_prof', JSON.stringify(prof));
+            alert("資料已儲存！");
         }
 
         function updateHome() {
             const today = new Date().toISOString().split('T')[0];
-            const data = db[today] || {food:0, water:0, burn:0};
-            // 基礎 BMR 計算
-            let age = prof.bday ? (new Date().getFullYear() - new Date(prof.bday).getFullYear()) : 25;
-            let bmr = prof.h ? (prof.gen==='M' ? (10*prof.w + 6.25*prof.h - 5*age + 5) : (10*prof.w + 6.25*prof.h - 5*age - 161)) : 1500;
+            const data = db[today] || { food:0, water:0, wm:0 };
+            const age = prof.bday ? (2026 - new Date(prof.bday).getFullYear()) : 25;
+            const bmr = (prof.gen === 'M') ? (10*prof.w + 6.25*prof.h - 5*age + 5) : (10*prof.w + 6.25*prof.h - 5*age - 161);
             
             document.getElementById('h-eat').innerText = data.food;
-            document.getElementById('h-burn').innerText = Math.round(data.burn || 0);
             document.getElementById('h-water').innerText = data.water;
-            document.getElementById('rem-kcal').innerText = Math.round(bmr - data.food + (data.burn || 0));
+            document.getElementById('h-weight').innerText = data.wm || '--';
+            document.getElementById('rem-kcal').innerText = Math.round(bmr - data.food);
             
-            let msg = "今天也要加油喔！";
-            if(data.food > bmr + 200) msg = "⚠️ 熱量攝取較多，建議增加運動或減少下一餐份量。";
-            if(data.period) msg = "🌸 生理期特別辛苦，記得多喝溫水，放慢節奏。";
-            document.getElementById('coach').innerText = msg;
+            let coach = "加油！保持好的生活習慣。";
+            if(data.food > bmr) coach = "⚠️ 今日攝取已超過基礎代謝，建議增加運動量！";
+            else if(data.food > 0) coach = "💡 目前攝取尚未達標，建議補充優質蛋白質。";
+            document.getElementById('coach').innerText = coach;
         }
 
-        // 初始化
-        window.onload = () => { loadProfile(); updateHome(); };
+        function renderCharts() {
+            const ctxW = document.getElementById('weightChart').getContext('2d');
+            const dates = Object.keys(db).sort();
+            const weights = dates.map(d => db[d].wm || null);
+
+            new Chart(ctxW, {
+                type: 'line',
+                data: { labels: dates, datasets: [{ label: '體重 (kg)', data: weights, borderColor: '#9eb3c2', tension: 0.3 }] }
+            });
+        }
+
+        window.onload = () => {
+            document.getElementById('p-gen').value = prof.gen;
+            document.getElementById('p-bday').value = prof.bday;
+            document.getElementById('p-h').value = prof.h;
+            document.getElementById('p-w').value = prof.w;
+            updateHome();
+            filterSports('');
+        };
     </script>
 </body>
 </html>
