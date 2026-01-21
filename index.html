@@ -11,7 +11,7 @@
         
         /* 底部導覽 */
         .nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 75px; background: white; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #eee; z-index: 9999; }
-        .nav-item { text-decoration: none; font-size: 1.4rem; color: #aaa; text-align: center; flex: 1; }
+        .nav-item { text-decoration: none; font-size: 1.4rem; color: #aaa; text-align: center; flex: 1; cursor: pointer; }
         .nav-item.active { color: var(--blue); }
         .nav-item span { display: block; font-size: 0.7rem; }
 
@@ -21,24 +21,23 @@
 
         /* 首頁經典布局 */
         .home-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; }
-        .home-title { font-size: 1.5rem; font-weight: bold; color: var(--text); }
-        .home-date { font-size: 0.9rem; color: #888; margin-top: 5px; }
         .home-coach { width: 45%; font-size: 0.85rem; color: var(--orange); background: #fff5f0; padding: 10px; border-radius: 10px; border-left: 4px solid var(--orange); }
 
         /* 月曆 */
-        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
         .day { aspect-ratio: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.85rem; cursor: pointer; background: #fff; border: 1px solid #f0f0f0; position: relative; }
         .day.today { border: 2px solid var(--blue); color: var(--blue); font-weight: bold; }
         .day.selected { background: var(--blue) !important; color: white !important; }
-        .dot-container { display: flex; gap: 2px; margin-top: 2px; }
+        .dot-container { display: flex; gap: 2px; margin-top: 2px; position: absolute; bottom: 3px; }
         .dot { width: 4px; height: 4px; border-radius: 50%; }
 
-        /* 通用清單樣式 */
-        .log-item { background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; }
-        .btn-main { background: var(--blue); color: white; width: 100%; border: none; padding: 15px; border-radius: 10px; font-weight: bold; margin-top: 15px; }
+        /* 清單與輸入 */
+        .log-item { background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+        .btn-main { background: var(--blue); color: white; width: 100%; border: none; padding: 15px; border-radius: 10px; font-weight: bold; margin-top: 10px; cursor: pointer; }
         .input-group { margin-bottom: 15px; }
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        label { display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 8px; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        .sug-box { color: var(--blue); font-size: 0.8rem; padding: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -46,21 +45,17 @@
     <div id="home" class="page active">
         <div class="home-header">
             <div>
-                <div class="home-title">健康日記</div>
-                <div class="home-date" id="h-today-date">2026年 1月 21日</div>
+                <div style="font-size: 1.5rem; font-weight: bold;">健康日記</div>
+                <div id="h-today-date" style="font-size: 0.9rem; color: #888; margin-top: 5px;"></div>
             </div>
-            <div class="home-coach" id="h-coach">正在分析數據...</div>
+            <div class="home-coach" id="h-coach">載入中...</div>
         </div>
-
         <div class="card" style="text-align: center;">
             <div style="font-size: 0.9rem; color: #888;">今日剩餘熱量</div>
             <div style="font-size: 3rem; font-weight: bold; color: var(--green); margin: 10px 0;" id="h-rem-kcal">--</div>
             <div style="display: flex; justify-content: space-between; border-top: 1px solid #eee; padding-top: 15px;">
                 <div style="flex:1">攝取<br><b id="h-eat">0</b></div>
-                <div style="flex:1; border-left:1px solid #eee; border-right:1px solid #eee;">
-                    飲水<br><b id="h-water">0</b>
-                    <div id="h-water-status" style="font-size: 0.7rem; color: var(--orange);"></div>
-                </div>
+                <div style="flex:1; border-left:1px solid #eee; border-right:1px solid #eee;">飲水<br><b id="h-water">0</b><div id="h-water-status" style="font-size: 0.7rem; color: var(--orange);"></div></div>
                 <div style="flex:1">體重<br><b id="h-w">--</b></div>
             </div>
         </div>
@@ -68,68 +63,82 @@
 
     <div id="record" class="page">
         <div class="card">
-            <div class="cal-header">
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <button onclick="changeMonth(-1)">◀</button>
-                <h3 id="cal-month-title">2026年 1月</h3>
+                <h3 id="cal-month-title"></h3>
                 <button onclick="changeMonth(1)">▶</button>
             </div>
             <div class="calendar-grid" id="cal-body"></div>
-            <div id="cal-alert" style="margin-top:10px; font-size:0.8rem; color:red; min-height:1.2rem;"></div>
+            <div id="cal-alert" style="margin-top:10px; font-size:0.85rem; color:var(--orange); text-align:center; min-height: 1.2rem;"></div>
         </div>
 
         <div id="edit-area" class="card" style="display:none;">
-            <h3 id="selected-date-title">日期</h3>
+            <h3 id="edit-date-display" style="color: var(--blue); border-bottom: 1px solid #eee; padding-bottom: 10px;"></h3>
             
             <div class="input-group">
-                <label>🍕 食物</label>
-                <div style="display:flex; gap:5px;"><input type="text" id="food-n" placeholder="食物名稱"><input type="number" id="food-k" placeholder="卡" style="width:80px;"><button onclick="addItem('food')" style="border-radius:8px; border:none; background:var(--blue); color:white; padding:0 15px;">+</button></div>
+                <label>🍕 食物熱量</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="food-n" placeholder="名稱 (如:炒青菜)" oninput="searchFoodSuggest(this.value)">
+                    <input type="number" id="food-k" placeholder="卡" style="width:80px;">
+                    <button onclick="addLogItem('food')" style="border-radius:8px; border:none; background:var(--blue); color:white; padding:0 15px;">+</button>
+                </div>
+                <div id="food-sug-ui" class="sug-box"></div>
                 <div id="food-list-ui" style="margin-top:10px;"></div>
             </div>
 
             <div class="input-group"><label>💧 飲水 (ml)</label><input type="number" id="in-water"></div>
             <div class="input-group"><label>⚖️ 體重 (空腹/睡前)</label><div style="display:flex; gap:5px;"><input type="number" id="w-m" placeholder="空腹"><input type="number" id="w-n" placeholder="睡前"></div></div>
-            <div class="input-group"><label>📏 圍度 (腰/臀/腿)</label><div style="display:flex; gap:5px;"><input type="number" id="s-w"><input type="number" id="s-h"><input type="number" id="s-l"></div></div>
+            <div class="input-group"><label>📏 圍度 (腰/臀/腿)</label><div style="display:flex; gap:5px;"><input type="number" id="s-w" placeholder="腰"><input type="number" id="s-h" placeholder="臀"><input type="number" id="s-l" placeholder="腿"></div></div>
             
             <div class="input-group">
-                <label>🏋️ 運動項目</label>
-                <select id="sport-sel" style="width:100%; padding:10px; border-radius:8px;"></select>
-                <button onclick="addItem('sport')" class="btn-main" style="background:var(--green); margin-top:8px; padding:10px;">加入今日運動</button>
+                <label>🏋️ 運動</label>
+                <select id="sport-sel"></select>
+                <button onclick="addLogItem('sport')" class="btn-main" style="background:var(--green); font-size:0.9rem; padding:10px;">加入今日運動清單</button>
                 <div id="sport-list-ui" style="margin-top:10px;"></div>
             </div>
 
-            <div class="input-group"><label><input type="checkbox" id="is-period"> 🌸 生理期紀錄</label></div>
-            <button class="btn-main" onclick="saveAll()">儲存紀錄</button>
+            <div class="input-group"><label><input type="checkbox" id="is-period"> 🌸 今天是生理期</label></div>
+            <button class="btn-main" onclick="saveDay()">確認儲存</button>
         </div>
     </div>
 
     <div id="chart" class="page">
-        <div class="card"><h3>體重趨勢</h3><canvas id="weightChart"></canvas></div>
-        <div class="card"><h3>圍度趨勢</h3><canvas id="sizeChart"></canvas></div>
+        <div class="card"><h3>體重趨勢</h3><canvas id="wChart"></canvas></div>
+        <div class="card"><h3>圍度趨勢</h3><canvas id="sChart"></canvas></div>
     </div>
 
     <div id="profile" class="page">
         <div class="card">
             <h3>👤 個人資料</h3>
-            <label>生日</label><input type="date" id="p-bday" style="margin-bottom:10px;">
-            <label>身高 (cm)</label><input type="number" id="p-h" style="margin-bottom:10px;">
-            <label>當前體重 (kg)</label><input type="number" id="p-w">
-            <button class="btn-main" style="background:var(--green);" onclick="saveProfile()">儲存並計算 BMR</button>
+            <label>生日</label><input type="date" id="p-bday">
+            <label>身高 (cm)</label><input type="number" id="p-h">
+            <label>體重 (kg)</label><input type="number" id="p-w">
+            <button class="btn-main" style="background:var(--green);" onclick="saveProf()">儲存資料</button>
+        </div>
+        <div class="card">
+            <h3>🏃 自訂運動</h3>
+            <div style="display:flex; gap:5px; margin-bottom:10px;">
+                <input type="text" id="cs-name" placeholder="名稱">
+                <button onclick="addCS()" style="border-radius:8px; border:none; background:var(--blue); color:white; padding:0 15px;">+</button>
+            </div>
+            <div id="cs-list-ui"></div>
         </div>
     </div>
 
     <nav class="nav">
-        <a href="javascript:void(0)" class="nav-item active" onclick="nav('home', this)">🏠<span>首頁</span></a>
-        <a href="javascript:void(0)" class="nav-item" onclick="nav('record', this)">📝<span>紀錄</span></a>
-        <a href="javascript:void(0)" class="nav-item" onclick="nav('chart', this)">📈<span>圖表</span></a>
-        <a href="javascript:void(0)" class="nav-item" onclick="nav('profile', this)">👤<span>個人</span></a>
+        <div class="nav-item active" onclick="nav('home', this)">🏠<span>首頁</span></div>
+        <div class="nav-item" onclick="nav('record', this)">📝<span>紀錄</span></div>
+        <div class="nav-item" onclick="nav('chart', this)">📈<span>圖表</span></div>
+        <div class="nav-item" onclick="nav('profile', this)">👤<span>個人</span></div>
     </nav>
 
     <script>
-        let db = JSON.parse(localStorage.getItem('hd_v5_db')) || {};
-        let prof = JSON.parse(localStorage.getItem('hd_v5_prof')) || { bday:'', h:0, w:0, sports:[{n:"散步", u:"分"}] };
+        let db = JSON.parse(localStorage.getItem('hd_v6_db')) || {};
+        let prof = JSON.parse(localStorage.getItem('hd_v6_prof')) || { bday:'', h:160, w:55, sports:['散步','打掃'] };
         let viewDate = new Date();
-        let selectedDate = "";
-        let tmpFood = [], tmpSport = [];
+        let selDate = "";
+        let curF = [], curS = [];
+        const foodLib = { "炒青菜":100, "雞胸肉":165, "白飯":280, "排骨麵":600, "珍奶":500 };
 
         function nav(p, el) {
             document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
@@ -137,97 +146,60 @@
             document.getElementById(p).classList.add('active');
             el.classList.add('active');
             if(p==='home') updateHome();
-            if(p==='record') renderCalendar();
-            if(p==='chart') renderCharts();
-            if(p==='profile') { document.getElementById('p-bday').value=prof.bday; document.getElementById('p-h').value=prof.h; document.getElementById('p-w').value=prof.w; }
+            if(p==='record') renderCal();
+            if(p==='chart') setTimeout(renderCharts, 100);
+            if(p==='profile') renderProfPage();
         }
 
-        // --- 核心邏輯 ---
-        function getBMR() {
-            if(!prof.h || !prof.w) return 1500;
-            let age = 2026 - new Date(prof.bday).getFullYear();
-            return Math.round(10 * prof.w + 6.25 * prof.h - 5 * age - 161); // 以女性公式為預設
-        }
-
+        // --- 首頁 ---
         function updateHome() {
             const today = new Date().toISOString().split('T')[0];
             const data = db[today] || { food:[], water:0, wm:0 };
-            const bmr = getBMR();
-            const eat = (data.food || []).reduce((s,f)=>s+f.k, 0);
-            const waterGoal = prof.w * 35 || 2000;
-
+            const age = prof.bday ? (2026 - new Date(prof.bday).getFullYear()) : 25;
+            const bmr = Math.round(10*prof.w + 6.25*prof.h - 5*age - 161);
+            const eat = (data.food||[]).reduce((s,f)=>s+f.k, 0);
+            
             document.getElementById('h-today-date').innerText = new Date().toLocaleDateString('zh-TW', {year:'numeric', month:'long', day:'numeric'});
             document.getElementById('h-eat').innerText = eat;
-            document.getElementById('h-water').innerText = data.water;
+            document.getElementById('h-water').innerText = data.water || 0;
             document.getElementById('h-w').innerText = data.wm || '--';
             document.getElementById('h-rem-kcal').innerText = bmr - eat;
             
-            // 飲水狀態
-            let wDiff = Math.round(waterGoal - data.water);
-            document.getElementById('h-water-status').innerText = wDiff > 0 ? `還差 ${wDiff}ml` : "🎉 已達標";
-
-            // 教練訊息
-            let msg = "今天也要加油喔！";
-            if(data.water < waterGoal/2) msg = "💧 喝水太少啦，身體會代謝變慢喔！";
-            if(eat > bmr) msg = "⚠️ 攝取已超過基礎代謝，動起來！";
-            if(data.period) msg = "🌸 生理期記得保暖，辛苦了。";
-            document.getElementById('h-coach').innerText = msg;
+            let wGoal = prof.w * 35;
+            document.getElementById('h-water-status').innerText = data.water >= wGoal ? "✅ 已達標" : `還差 ${Math.max(0, wGoal - data.water)}ml`;
+            document.getElementById('h-coach').innerText = data.period ? "🌸 生理期記得保暖喔！" : (eat > bmr ? "⚠️ 熱量稍微超標囉，動一動吧！" : "💡 目前狀態良好，加油！");
         }
 
-        // --- 月曆與警告 ---
-        function renderCalendar() {
+        // --- 紀錄 ---
+        function renderCal() {
             const body = document.getElementById('cal-body'); body.innerHTML = '';
             const y = viewDate.getFullYear(), m = viewDate.getMonth();
             document.getElementById('cal-month-title').innerText = `${y}年 ${m+1}月`;
             const first = new Date(y, m, 1).getDay();
             const last = new Date(y, m+1, 0).getDate();
-            const bmr = getBMR();
-            const waterGoal = prof.w * 35 || 2000;
+            const bmr = 1500; // 簡化
 
             for(let i=0; i<first; i++) body.appendChild(document.createElement('div'));
             for(let i=1; i<=last; i++) {
                 const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
                 const el = document.createElement('div');
-                el.className = `day ${selectedDate===ds?'selected':''}`;
+                el.className = `day ${selDate===ds?'selected':''}`;
                 el.innerText = i;
-                
                 if(db[ds]) {
-                    const eat = (db[ds].food||[]).reduce((s,f)=>s+f.k, 0);
-                    const water = db[ds].water || 0;
-                    let dots = '<div class="dot-container">';
-                    if(eat > bmr) dots += '<div class="dot" style="background:red"></div>';
-                    if(water < waterGoal) dots += '<div class="dot" style="background:blue"></div>';
-                    dots += '</div>';
-                    el.innerHTML += dots;
+                    el.innerHTML += `<div class="dot-container">` + 
+                        ((db[ds].food||[]).reduce((s,f)=>s+f.k,0) > bmr ? `<div class="dot" style="background:red"></div>` : '') +
+                        (db[ds].water < 1500 ? `<div class="dot" style="background:blue"></div>` : '') + `</div>`;
                 }
-                
-                el.onclick = () => { 
-                    selectedDate = ds; 
-                    showDayAlert(ds, bmr, waterGoal);
-                    openEdit(ds); 
-                    renderCalendar(); 
-                };
+                el.onclick = () => { selDate = ds; openEdit(ds); renderCal(); };
                 body.appendChild(el);
             }
         }
 
-        function showDayAlert(ds, bmr, waterGoal) {
-            const data = db[ds];
-            const info = document.getElementById('cal-alert');
-            if(!data) { info.innerText = ""; return; }
-            let alerts = [];
-            const eat = (data.food||[]).reduce((s,f)=>s+f.k, 0);
-            if(eat > bmr) alerts.push("⚠️ 熱量超標");
-            if(data.water < waterGoal) alerts.push("💧 水分不足");
-            info.innerText = alerts.length ? alerts.join(' / ') : "✅ 這天表現很棒！";
-        }
-
         function openEdit(ds) {
-            document.getElementById('edit-area').style.display='block';
-            document.getElementById('selected-date-title').innerText = ds;
+            document.getElementById('edit-area').style.display = 'block';
+            document.getElementById('edit-date-display').innerText = `正在編輯：${ds}`;
             const data = db[ds] || { food:[], water:0, wm:0, wn:0, wa:0, hi:0, le:0, sports:[], period:false };
-            tmpFood = data.food || [];
-            tmpSport = data.sports || [];
+            curF = data.food || []; curS = data.sports || [];
             document.getElementById('in-water').value = data.water || '';
             document.getElementById('w-m').value = data.wm || '';
             document.getElementById('w-n').value = data.wn || '';
@@ -236,51 +208,83 @@
             document.getElementById('s-l').value = data.le || '';
             document.getElementById('is-period').checked = data.period || false;
             
-            // 運動下拉選單
             const sel = document.getElementById('sport-sel');
-            sel.innerHTML = prof.sports.map(s => `<option value='${s.n}'>${s.n}</option>`).join('');
+            sel.innerHTML = prof.sports.map(s => `<option value="${s}">${s}</option>`).join('');
             refreshUI();
+            
+            // 點擊警告
+            const eat = curF.reduce((s,f)=>s+f.k,0);
+            document.getElementById('cal-alert').innerText = (eat > 1600 ? "⚠️ 熱量超標 " : "") + (data.water < 1500 ? "💧 水分不足" : "");
         }
 
-        function addItem(type) {
+        function searchFoodSuggest(v) {
+            const m = Object.keys(foodLib).find(k => k.includes(v));
+            document.getElementById('food-sug-ui').innerHTML = (v && m) ? `<span onclick="setF('${m}',${foodLib[m]})">💡 建議: ${m} (${foodLib[m]}卡)</span>` : '';
+        }
+        function setF(n,k) { document.getElementById('food-n').value=n; document.getElementById('food-k').value=k; }
+
+        function addLogItem(type) {
             if(type==='food') {
-                const n = document.getElementById('food-n').value || "食物";
-                const k = Number(document.getElementById('food-k').value) || 0;
-                tmpFood.push({n, k});
+                const n = document.getElementById('food-n').value;
+                const k = Number(document.getElementById('food-k').value);
+                if(n && k) { 
+                    curF.push({n, k}); 
+                    document.getElementById('food-n').value = ''; 
+                    document.getElementById('food-k').value = ''; 
+                    document.getElementById('food-sug-ui').innerHTML = '';
+                }
             } else {
-                const n = document.getElementById('sport-sel').value;
-                tmpSport.push({n, c:1});
+                curS.push({n: document.getElementById('sport-sel').value});
             }
             refreshUI();
         }
 
         function refreshUI() {
-            document.getElementById('food-list-ui').innerHTML = tmpFood.map((f,i)=>`<div class="log-item">${f.n} (${f.k}k) <b onclick="tmpFood.splice(${i},1);refreshUI()">✕</b></div>`).join('');
-            document.getElementById('sport-list-ui').innerHTML = tmpSport.map((s,i)=>`<div class="log-item">${s.n} <b onclick="tmpSport.splice(${i},1);refreshUI()">✕</b></div>`).join('');
+            document.getElementById('food-list-ui').innerHTML = curF.map((f,i)=>`<div class="log-item">${f.n} (${f.k}k) <b onclick="curF.splice(${i},1);refreshUI()">✕</b></div>`).join('');
+            document.getElementById('sport-list-ui').innerHTML = curS.map((s,i)=>`<div class="log-item">${s.n} <b onclick="curS.splice(${i},1);refreshUI()">✕</b></div>`).join('');
         }
 
-        function saveAll() {
-            db[selectedDate] = {
-                food: tmpFood, water: Number(document.getElementById('in-water').value),
-                wm: Number(document.getElementById('w-m').value), wn: Number(document.getElementById('w-n').value),
-                wa: Number(document.getElementById('s-w').value), hi: Number(document.getElementById('s-h').value), le: Number(document.getElementById('s-l').value),
-                sports: tmpSport, period: document.getElementById('is-period').checked
-            };
-            localStorage.setItem('hd_v5_db', JSON.stringify(db));
-            alert("儲存成功");
+        function saveDay() {
+            db[selDate] = { food:curF, water:Number(document.getElementById('in-water').value), wm:Number(document.getElementById('w-m').value), wn:Number(document.getElementById('w-n').value), wa:Number(document.getElementById('s-w').value), hi:Number(document.getElementById('s-h').value), le:Number(document.getElementById('s-l').value), sports:curS, period:document.getElementById('is-period').checked };
+            localStorage.setItem('hd_v6_db', JSON.stringify(db));
+            alert("儲存完成");
             updateHome();
         }
 
-        function saveProfile() {
+        // --- 個人資料 ---
+        function renderProfPage() {
+            document.getElementById('p-bday').value = prof.bday;
+            document.getElementById('p-h').value = prof.h;
+            document.getElementById('p-w').value = prof.w;
+            document.getElementById('cs-list-ui').innerHTML = prof.sports.map((s,i)=>`<div class="log-item">${s} <b onclick="prof.sports.splice(${i},1);saveProf();renderProfPage()">✕</b></div>`).join('');
+        }
+        function saveProf() {
             prof.bday = document.getElementById('p-bday').value;
             prof.h = Number(document.getElementById('p-h').value);
             prof.w = Number(document.getElementById('p-w').value);
-            localStorage.setItem('hd_v5_prof', JSON.stringify(prof));
-            alert("基本資料已更新");
+            localStorage.setItem('hd_v6_prof', JSON.stringify(prof));
+            alert("已儲存");
+        }
+        function addCS() {
+            const n = document.getElementById('cs-name').value;
+            if(n) { prof.sports.push(n); document.getElementById('cs-name').value=''; saveProf(); renderProfPage(); }
         }
 
-        function changeMonth(s) { viewDate.setMonth(viewDate.getMonth()+s); renderCalendar(); }
-        
+        // --- 圖表 ---
+        function renderCharts() {
+            const dates = Object.keys(db).sort().slice(-7);
+            const wCtx = document.getElementById('wChart').getContext('2d');
+            const sCtx = document.getElementById('sChart').getContext('2d');
+            
+            new Chart(wCtx, { type: 'line', data: { labels: dates, datasets: [{ label: '體重', data: dates.map(d=>db[d].wm), borderColor: '#9eb3c2', tension:0.3 }] } });
+            new Chart(sCtx, { type: 'line', data: { labels: dates, datasets: [
+                { label: '腰', data: dates.map(d=>db[d].wa), borderColor: '#a3b18a' },
+                { label: '臀', data: dates.map(d=>db[d].hi), borderColor: '#eac4d5' },
+                { label: '腿', data: dates.map(d=>db[d].le), borderColor: '#e6a27e' }
+            ] } });
+        }
+
+        function changeMonth(s) { viewDate.setMonth(viewDate.getMonth()+s); renderCal(); }
         window.onload = () => { updateHome(); };
     </script>
 </body>
