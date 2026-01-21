@@ -5,239 +5,221 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>健康日記 - Health Diary</title>
     <style>
-        /* --- 1. 不傷眼莫蘭迪配色方案 --- */
         :root {
-            --bg-color: #fdfcf8;      /* 米白色背景 */
-            --text-color: #4a4a4a;    /* 深碳灰文字 */
-            --primary-green: #a3b18a; /* 鼠尾草綠 (飲食) */
-            --primary-blue: #9eb3c2;  /* 霧霾藍 (運動/水) */
-            --period-pink: #eac4d5;   /* 玫瑰粉 (生理期) */
-            --warning-orange: #e6a27e;/* 磚橘色 (警示) */
+            --bg-color: #fdfcf8;
+            --text-color: #4a4a4a;
+            --primary-green: #a3b18a;
+            --primary-blue: #9eb3c2;
+            --period-pink: #eac4d5;
+            --warning-orange: #e6a27e;
             --card-bg: #ffffff;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding-bottom: 80px; /* 為底部導覽留空間 */
-            line-height: 1.6;
+            padding-bottom: 80px;
         }
 
-        /* --- 2. 佈局組件 --- */
-        header {
-            padding: 20px;
+        /* 導覽與頁面控制 */
+        .page { display: none; padding: 20px; }
+        .page.active { display: block; }
+        
+        header { padding: 10px 0; border-bottom: 1px solid #eee; margin-bottom: 20px; }
+
+        /* 圓餅圖樣式 */
+        .chart-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            border-radius: 50%;
+            background: conic-gradient(var(--primary-green) 0%, #eee 0%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chart-inner {
+            width: 150px;
+            height: 150px;
             background: var(--card-bg);
-            border-bottom: 1px solid #eee;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .coach-advice {
-            background-color: #f0f4f0;
-            padding: 15px;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            margin-top: 10px;
-            border-left: 5px solid var(--primary-green);
-        }
-
-        .dashboard-card {
-            margin: 15px;
-            padding: 20px;
-            background: var(--card-bg);
-            border-radius: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-
-        /* --- 3. 月曆樣式 --- */
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            padding: 10px;
-        }
-
-        .calendar-day {
-            aspect-ratio: 1;
+            border-radius: 50%;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            position: relative;
-            cursor: pointer;
-            border: 1px solid transparent;
+            text-align: center;
         }
 
-        .calendar-day.today {
-            border: 2px solid var(--primary-blue);
+        /* 月曆樣式 */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+        .calendar-day { 
+            aspect-ratio: 1; border: 1px solid #eee; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer;
         }
-
-        .calendar-day.selected {
-            background-color: #ececec;
-        }
-
-        .dot-warning { width: 5px; height: 5px; background: red; border-radius: 50%; position: absolute; top: 5px; right: 5px; }
-        .icon-gym { font-size: 0.7rem; margin-top: 2px; }
-
-        /* --- 4. 底部導覽列 --- */
+        .calendar-day.selected { border: 2px solid var(--primary-blue); background: #f0f0f0; }
+        .dot { width: 6px; height: 6px; border-radius: 50%; position: absolute; top: 4px; right: 4px; }
+        .dot-red { background: red; }
+        
+        /* 表單樣式 */
+        .input-group { margin-bottom: 15px; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        
+        /* 底部導覽 */
         .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            height: 70px;
-            background: var(--card-bg);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
+            position: fixed; bottom: 0; width: 100%; height: 70px;
+            background: white; display: flex; justify-content: space-around; align-items: center;
             border-top: 1px solid #eee;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
         }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-size: 0.7rem;
-            color: #888;
-            text-decoration: none;
-        }
-
+        .nav-item { text-decoration: none; font-size: 1.5rem; color: #888; text-align: center; }
+        .nav-item span { display: block; font-size: 0.7rem; }
         .nav-item.active { color: var(--primary-blue); }
-        .nav-icon { font-size: 1.5rem; margin-bottom: 2px; }
-
-        /* --- 5. 工具類 --- */
-        .hidden { display: none; }
-        .btn {
-            background: var(--primary-blue);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-        }
     </style>
 </head>
 <body>
 
-    <div id="page-home" class="page">
-        <header>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin:0;">健康日記</h2>
-                <span id="current-date" style="font-size: 0.9rem; color: #888;">2026-01-21</span>
+    <div id="page-home" class="page active">
+        <header><h2>健康日記</h2></header>
+        <div class="chart-container" id="main-circle">
+            <div class="chart-inner">
+                <small>剩餘熱量</small>
+                <strong id="remain-kcal">2000</strong>
+                <small>kcal</small>
             </div>
-            <div class="coach-advice" id="smart-advice">
-                今天也要記得喝水喔！適度的運動能讓你心情更好。❤️
-            </div>
-        </header>
-
-        <div class="dashboard-card">
-            <h3>今日摘要</h3>
-            <div style="display: flex; justify-content: space-around; text-align: center;">
-                <div>
-                    <div style="font-size: 1.2rem; font-weight: bold; color: var(--primary-blue);">0</div>
-                    <small>消耗 kcal</small>
-                </div>
-                <div>
-                    <div style="font-size: 1.2rem; font-weight: bold; color: var(--primary-green);">0</div>
-                    <small>飲水 mL</small>
-                </div>
-                <div>
-                    <div style="font-size: 1.2rem; font-weight: bold;">--</div>
-                    <small>目前體重</small>
-                </div>
-            </div>
+        </div>
+        <div style="display: flex; justify-content: space-around; text-align: center;">
+            <div><b id="home-eat">0</b><br><small>攝取</small></div>
+            <div><b id="home-burn">0</b><br><small>消耗</small></div>
+            <div><b id="home-water">0</b><br><small>飲水(mL)</small></div>
         </div>
     </div>
 
-    <div id="page-record" class="page hidden">
-        <header><h3>選擇日期</h3></header>
-        <div class="dashboard-card" style="padding: 10px;">
-            <div id="calendar" class="calendar-grid">
-                </div>
+    <div id="page-record" class="page">
+        <header><h3>日期選擇</h3></header>
+        <div class="calendar-grid" id="calendar"></div>
+        <div id="day-detail" style="margin-top:20px; display:none;">
+            <hr>
+            <h4 id="selected-date-title">日期</h4>
+            <div class="input-group">
+                <label>飲食攝取 (kcal)</label>
+                <input type="number" id="input-food" placeholder="輸入熱量">
+            </div>
+            <div class="input-group">
+                <label>飲水量 (mL)</label>
+                <input type="number" id="input-water" placeholder="輸入mL">
+            </div>
+            <div class="input-group">
+                <label>運動消耗 (kcal)</label>
+                <input type="number" id="input-sport" placeholder="輸入消耗">
+            </div>
+            <button onclick="saveData()" style="width:100%; padding:10px; background:var(--primary-blue); color:white; border:none; border-radius:8px;">儲存當日紀錄</button>
         </div>
-        <div id="day-summary" class="dashboard-card">
-            <h4>當日摘要</h4>
-            <p id="summary-text">請點擊日期查看摘要，再次點擊進入編輯。</p>
-            <button class="btn" id="enter-edit-btn" style="display: none;">進入詳細紀錄</button>
-        </div>
+    </div>
+
+    <div id="page-chart" class="page">
+        <header><h3>數據分析</h3></header>
+        <p>圖表功能開發中：這裡將顯示您的體重與熱量波動波線圖。</p>
+    </div>
+
+    <div id="page-profile" class="page">
+        <header><h3>個人資料設定</h3></header>
+        <div class="input-group"><label>性別</label><select id="user-gender"><option>女</option><option>男</option></select></div>
+        <div class="input-group"><label>身高 (cm)</label><input type="number" id="user-height"></div>
+        <div class="input-group"><label>體重 (kg)</label><input type="number" id="user-weight"></div>
+        <div class="input-group"><label>年齡</label><input type="number" id="user-age"></div>
+        <button onclick="saveProfile()" style="width:100%; padding:10px; background:var(--primary-green); color:white; border:none; border-radius:8px;">儲存設定</button>
     </div>
 
     <nav class="bottom-nav">
-        <a href="#" class="nav-item active" onclick="showPage('home')">
-            <span class="nav-icon">🏠</span>
-            <span>首頁</span>
-        </a>
-        <a href="#" class="nav-item" onclick="showPage('record')">
-            <span class="nav-icon">📝</span>
-            <span>紀錄</span>
-        </a>
-        <a href="#" class="nav-item" onclick="showPage('chart')">
-            <span class="nav-icon">📈</span>
-            <span>圖表</span>
-        </a>
-        <a href="#" class="nav-item" onclick="showPage('profile')">
-            <span class="nav-icon">👤</span>
-            <span>個人</span>
-        </a>
+        <a href="javascript:void(0)" class="nav-item active" onclick="nav('home')">🏠<span>首頁</span></a>
+        <a href="javascript:void(0)" class="nav-item" onclick="nav('record')">📝<span>紀錄</span></a>
+        <a href="javascript:void(0)" class="nav-item" onclick="nav('chart')">📈<span>圖表</span></a>
+        <a href="javascript:void(0)" class="nav-item" onclick="nav('profile')">👤<span>個人</span></a>
     </nav>
 
     <script>
-        // --- 核心邏輯：頁面切換 ---
-        function showPage(pageId) {
-            document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
-            const targetPage = document.getElementById('page-' + pageId);
-            if(targetPage) targetPage.classList.remove('hidden');
-            
-            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            // 這裡可以根據點擊對象設定 active
+        let db = JSON.parse(localStorage.getItem('healthDiaryDB')) || {};
+        let selectedDate = null;
+        let profile = JSON.parse(localStorage.getItem('healthProfile')) || { target: 2000 };
+
+        function nav(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-' + page).classList.add('active');
+            event.currentTarget.classList.add('active');
+            if(page === 'home') updateHome();
         }
 
-        // --- 月曆生成邏輯 (簡化版) ---
-        function generateCalendar() {
-            const calendarEl = document.getElementById('calendar');
-            let daysHtml = '';
-            const today = new Date().getDate();
-            
-            for (let i = 1; i <= 31; i++) {
-                const isToday = i === today ? 'today' : '';
-                daysHtml += `
-                    <div class="calendar-day ${isToday}" onclick="handleDayClick(this, ${i})">
-                        ${i}
-                        ${i === 15 ? '<div class="dot-warning"></div>' : ''}
-                        ${i === today ? '<div class="icon-gym">🏋️</div>' : ''}
-                    </div>
-                `;
-            }
-            calendarEl.innerHTML = daysHtml;
-        }
-
-        let lastClickedDay = null;
-        function handleDayClick(el, day) {
-            if (lastClickedDay === day) {
-                alert('進入 ' + day + ' 日的詳細編輯頁面 (吃、喝、動、量)');
-                // 這裡之後串接垂直紀錄頁
-            } else {
-                // 單擊選取
-                document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
-                el.classList.add('selected');
-                document.getElementById('summary-text').innerText = `1月 ${day} 日：今日攝取 1200kcal，運動消耗 200kcal，水分 1500mL。`;
-                document.getElementById('enter-edit-btn').style.display = 'block';
-                lastClickedDay = day;
+        function renderCalendar() {
+            const cal = document.getElementById('calendar');
+            cal.innerHTML = '';
+            for(let i=1; i<=31; i++) {
+                const dateKey = `2026-01-${i.toString().padStart(2, '0')}`;
+                const hasData = db[dateKey];
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day';
+                dayEl.innerHTML = i + (hasData ? '<div class="dot dot-red"></div>' : '');
+                dayEl.onclick = () => selectDate(dateKey, dayEl);
+                cal.appendChild(dayEl);
             }
         }
 
-        // 初始化
-        window.onload = () => {
-            generateCalendar();
-            // 設定正確日期
-            const now = new Date();
-            document.getElementById('current-date').innerText = now.toISOString().split('T')[0];
-        };
+        function selectDate(date, el) {
+            selectedDate = date;
+            document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
+            el.classList.add('selected');
+            document.getElementById('day-detail').style.display = 'block';
+            document.getElementById('selected-date-title').innerText = date;
+            
+            const data = db[date] || { food: '', water: '', sport: '' };
+            document.getElementById('input-food').value = data.food;
+            document.getElementById('input-water').value = data.water;
+            document.getElementById('input-sport').value = data.sport;
+        }
+
+        function saveData() {
+            db[selectedDate] = {
+                food: Number(document.getElementById('input-food').value),
+                water: Number(document.getElementById('input-water').value),
+                sport: Number(document.getElementById('input-sport').value)
+            };
+            localStorage.setItem('healthDiaryDB', JSON.stringify(db));
+            alert('紀錄已儲存！');
+            renderCalendar();
+        }
+
+        function saveProfile() {
+            const p = {
+                gender: document.getElementById('user-gender').value,
+                height: document.getElementById('user-height').value,
+                weight: document.getElementById('user-weight').value,
+                age: document.getElementById('user-age').value,
+                target: 2000 // 簡化版目標
+            };
+            localStorage.setItem('healthProfile', JSON.stringify(p));
+            profile = p;
+            alert('設定已更新！');
+        }
+
+        function updateHome() {
+            const today = new Date().toISOString().split('T')[0];
+            const data = db[today] || { food: 0, water: 0, sport: 0 };
+            const target = profile.target || 2000;
+            const remain = target - data.food + data.sport;
+            
+            document.getElementById('remain-kcal').innerText = remain;
+            document.getElementById('home-eat').innerText = data.food;
+            document.getElementById('home-burn').innerText = data.sport;
+            document.getElementById('home-water').innerText = data.water;
+            
+            const percent = Math.min((data.food / target) * 100, 100);
+            document.getElementById('main-circle').style.background = `conic-gradient(var(--primary-green) ${percent}%, #eee 0%)`;
+        }
+
+        renderCalendar();
+        updateHome();
     </script>
 </body>
 </html>
