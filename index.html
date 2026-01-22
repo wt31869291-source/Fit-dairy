@@ -15,14 +15,11 @@
         .page { display: none; padding: 15px; }
         .page.active { display: block; }
         .card { background: var(--card); padding: 18px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 12px; }
-        
-        /* 📅 行事曆邏輯修復 */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
         .day { aspect-ratio: 0.7; border-radius: 8px; display: flex; flex-direction: column; align-items: center; padding-top: 5px; font-size: 0.8rem; cursor: pointer; background: #fff; border: 1px solid #f0f0f0; }
-        .day.today { border: 2.5px solid var(--blue); font-weight: bold; } /* 當天日期框選 */
-        .day.selected { background: rgba(158, 179, 194, 0.4) !important; } /* 選中日期背景 */
+        .day.today { border: 2.5px solid var(--blue); font-weight: bold; }
+        .day.selected { background: rgba(158, 179, 194, 0.4) !important; }
         .day-status { font-size: 0.6rem; margin-top: 2px; }
-
         #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; justify-content: center; align-items: center; }
         .modal { background: white; padding: 20px; border-radius: 20px; width: 85%; max-width: 380px; text-align: center; max-height: 80vh; overflow-y: auto; }
         input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; font-size: 1rem; }
@@ -30,6 +27,7 @@
         .btn-qty { background: #eee; border: none; padding: 5px 12px; border-radius: 5px; font-weight: bold; }
         .log-item { background: #f8f8f8; padding: 10px; border-radius: 8px; margin-bottom: 6px; display: flex; justify-content: space-between; font-size: 0.85rem; }
         .red-alert { color: #ff5a5a; font-weight: bold; }
+        .date-shifter { background: white; border: 1px solid #ddd; padding: 8px 15px; border-radius: 20px; font-size: 0.9rem; display: flex; align-items: center; justify-content: space-between; width: 220px; margin: 10px auto; font-weight: bold; color: var(--blue); }
     </style>
 </head>
 <body>
@@ -44,15 +42,16 @@
     </div>
 
     <div id="home" class="page active">
-        <div style="margin-bottom: 15px;">
+        <div style="text-align: center; margin-bottom: 15px;">
             <div style="font-size: 1.5rem; font-weight: bold;">健康日記</div>
-            <div id="h-full-date" style="font-size: 1.1rem; color: var(--blue); font-weight: bold;"></div>
-            <div style="background: white; border: 1px solid #ddd; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; display: inline-block; margin-top:5px;">
-                <span onclick="shiftHomeDate(-1)">◀</span><span id="h-date-label" style="margin: 0 10px;">切換日期</span><span onclick="shiftHomeDate(1)">▶</span>
+            <div class="date-shifter">
+                <span onclick="shiftHomeDate(-1)" style="cursor:pointer; padding: 0 10px;">◀</span>
+                <span id="h-display-date">讀取中...</span>
+                <span onclick="shiftHomeDate(1)" style="cursor:pointer; padding: 0 10px;">▶</span>
             </div>
         </div>
         <div class="card" style="text-align: center;">
-            <div style="font-size: 0.85rem; color: #888;">今日預計赤字</div>
+            <div style="font-size: 0.85rem; color: #888;">預計熱量赤字</div>
             <div style="font-size: 2.8rem; font-weight: bold; color: var(--green);" id="h-deficit">0</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
                 <div onclick="openKcalPie()">攝取<br><b id="h-eat">0</b></div>
@@ -60,8 +59,8 @@
                 <div onclick="openHomeSport()">運動<br><b id="h-burn">0</b></div>
             </div>
             <div style="margin-top: 15px; display: flex; justify-content: space-around; font-size: 0.85rem; border-top: 1px dashed #eee; padding-top: 10px;">
-                <div>晨間體重: <b id="h-w1">--</b></div>
-                <div>晚間體重: <b id="h-w2">--</b></div>
+                <div>晨間: <b id="h-w1">--</b></div>
+                <div>晚間: <b id="h-w2">--</b></div>
             </div>
         </div>
         <div id="h-coach" style="font-size: 0.85rem; color: var(--orange); background: #fff5f0; padding: 15px; border-radius: 12px; border-left: 5px solid var(--orange);"></div>
@@ -77,14 +76,12 @@
         <div id="edit-area" class="card" style="display:none; border-top: 4px solid var(--blue);">
             <div id="edit-date-display" style="font-weight:bold; color:var(--blue); margin-bottom:10px;"></div>
             <label>🍕 食物記憶搜尋</label>
-            <div style="display:flex; gap:5px;"><input type="text" id="food-n" placeholder="輸入名稱" oninput="showFoodSug(this.value)"><input type="number" id="food-k" placeholder="卡" style="width:80px;"><button onclick="addF()" style="background:var(--blue); color:white; border:none; border-radius:8px; padding:0 12px; margin-bottom:10px;">+</button></div>
+            <div style="display:flex; gap:5px;"><input type="text" id="food-n" placeholder="名稱" oninput="showFoodSug(this.value)"><input type="number" id="food-k" placeholder="卡" style="width:80px;"><button onclick="addF()" style="background:var(--blue); color:white; border:none; border-radius:8px; padding:0 12px; margin-bottom:10px;">+</button></div>
             <div id="food-sug-list" style="font-size:0.8rem; color:var(--blue); margin-bottom:5px;"></div>
             <div id="food-list-ui"></div>
-            
             <label>⚖️ 體重/圍度</label>
-            <div style="display:flex; gap:5px;"><input type="number" id="w-m" step="0.1" placeholder="晨間體重"><input type="number" id="w-n" step="0.1" placeholder="晚間體重"></div>
+            <div style="display:flex; gap:5px;"><input type="number" id="w-m" step="0.1" placeholder="晨間"><input type="number" id="w-n" step="0.1" placeholder="晚間"></div>
             <div style="display:flex; gap:5px;"><input type="number" id="s-w" placeholder="腰" step="0.1"><input type="number" id="s-h" placeholder="臀" step="0.1"><input type="number" id="s-l" placeholder="腿" step="0.1"></div>
-            
             <label>🏋️ 運動</label>
             <select id="sport-sel" onchange="updateSportFields()"></select>
             <div id="sport-input-ui"></div>
@@ -94,10 +91,14 @@
         </div>
     </div>
 
-    <div id="chart" class="page"><div class="card"><h3>趨勢分析</h3><canvas id="wChart"></canvas></div><div class="card"><canvas id="sChart"></canvas></div></div>
+    <div id="chart" class="page">
+        <div class="card"><h3>體重趨勢</h3><canvas id="wChart"></canvas></div>
+        <div class="card"><h3>圍度趨勢 (cm)</h3><canvas id="sChart"></canvas></div>
+    </div>
+
     <div id="profile" class="page">
         <div class="card">
-            <h3>👤 個人設定</h3>
+            <h3>👤 基本資料</h3>
             <label>身高</label><input type="number" id="p-h">
             <label>基準體重</label><input type="number" id="p-w">
             <label>生日</label><input type="date" id="p-bday">
@@ -109,7 +110,7 @@
             <input type="text" id="cs-name" placeholder="名稱">
             <select id="cs-unit"><option value="組">按組數</option><option value="分">按時間</option></select>
             <select id="cs-met"><option value="3">輕</option><option value="6">中</option><option value="9">強</option></select>
-            <button onclick="addCustomSport()" class="btn-main">新增自訂運動</button>
+            <button onclick="addCustomSport()" class="btn-main">新增運動</button>
         </div>
     </div>
 
@@ -124,7 +125,7 @@
         const getToday = () => new Date().toISOString().split('T')[0];
         let db = JSON.parse(localStorage.getItem('hd_v21_db')) || {};
         let prof = JSON.parse(localStorage.getItem('hd_v21_prof')) || { h:160, w:55, bday:'', sports:[{n:'散步',u:'分',m:3}], foodMem:{} };
-        let hDate = getToday(), selDate = getToday(), viewDate = new Date(), curF = [], curS = [], mChart = null;
+        let hDate = getToday(), selDate = getToday(), viewDate = new Date(), curF = [], curS = [], mChart = null, wChartObj = null, sChartObj = null;
 
         function nav(p, el) {
             document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
@@ -146,14 +147,14 @@
             const eat = (d.food||[]).reduce((s,f)=>s+f.k, 0);
             const burn = (d.sports||[]).reduce((s,x)=>s+x.k, 0);
             const bmr = getBMR();
-            document.getElementById('h-full-date').innerText = hDate;
+            document.getElementById('h-display-date').innerText = hDate === getToday() ? "今天 (" + hDate + ")" : hDate;
             document.getElementById('h-deficit').innerText = bmr + burn - eat;
             document.getElementById('h-eat').innerText = eat;
             document.getElementById('h-bmr').innerText = bmr;
             document.getElementById('h-burn').innerText = Math.round(burn);
             document.getElementById('h-w1').innerText = d.w1 || '--';
             document.getElementById('h-w2').innerText = d.w2 || '--';
-            document.getElementById('h-coach').innerText = (bmr+burn-eat > 0) ? "💪 赤字達成！" : "⚠️ 注意攝取量。";
+            document.getElementById('h-coach').innerText = (bmr+burn-eat > 0) ? "💪 熱量缺口達成！" : "⚠️ 今日超標，多喝水代謝喔。";
         }
 
         function shiftHomeDate(s) {
@@ -168,13 +169,11 @@
             document.getElementById('cal-month-title').innerText = `${y}年 ${m+1}月`;
             const last = new Date(y, m+1, 0).getDate();
             const first = new Date(y, m, 1).getDay();
-            const today = getToday();
-
             for(let i=0; i<first; i++) body.appendChild(document.createElement('div'));
             for(let i=1; i<=last; i++) {
                 const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
                 const el = document.createElement('div');
-                el.className = `day ${ds===today?'today':''} ${selDate===ds?'selected':''}`;
+                el.className = `day ${ds===getToday()?'today':''} ${selDate===ds?'selected':''}`;
                 el.innerHTML = `<span>${i}</span><div class="day-status">${db[ds]?'✅':''}</div>`;
                 el.onclick = () => { selDate = ds; openEdit(ds); renderCal(); };
                 body.appendChild(el);
@@ -186,40 +185,28 @@
             document.getElementById('edit-date-display').innerText = `📅 編輯：${ds}`;
             const d = db[ds] || { food:[], sports:[], w1:'', w2:'', wa:'', hi:'', le:'' };
             curF = [...(d.food||[])]; curS = [...(d.sports||[])];
-            document.getElementById('w-m').value = d.w1 || '';
-            document.getElementById('w-n').value = d.w2 || '';
-            document.getElementById('s-w').value = d.wa || '';
-            document.getElementById('s-h').value = d.hi || '';
-            document.getElementById('s-l').value = d.le || '';
+            document.getElementById('w-m').value = d.w1 || ''; document.getElementById('w-n').value = d.w2 || '';
+            document.getElementById('s-w').value = d.wa || ''; document.getElementById('s-h').value = d.hi || ''; document.getElementById('s-l').value = d.le || '';
             document.getElementById('sport-sel').innerHTML = prof.sports.map(s => `<option value='${JSON.stringify(s)}'>${s.n}</option>`).join('');
             updateSportFields(); refreshUI();
         }
 
         function showFoodSug(v) {
             const match = Object.keys(prof.foodMem).filter(k => k.includes(v)).slice(0,3);
-            document.getElementById('food-sug-list').innerHTML = v ? match.map(m => `<span onclick="setFood('${m}',${prof.foodMem[m]})" style="text-decoration:underline;margin-right:10px;">${m}</span>`).join('') : '';
+            document.getElementById('food-sug-list').innerHTML = v ? match.map(m => `<span onclick="setFood('${m}',${prof.foodMem[m]})" style="text-decoration:underline;margin-right:10px;cursor:pointer;">${m}</span>`).join('') : '';
         }
         function setFood(n,k) { document.getElementById('food-n').value=n; document.getElementById('food-k').value=k; document.getElementById('food-sug-list').innerHTML=''; }
 
         function addF() {
             const n = document.getElementById('food-n').value, k = Number(document.getElementById('food-k').value);
-            if(n && k) {
-                curF.push({n, k});
-                prof.foodMem[n] = k;
-                localStorage.setItem('hd_v21_prof', JSON.stringify(prof));
-                document.getElementById('food-n').value=''; document.getElementById('food-k').value='';
-                refreshUI();
-            }
+            if(n && k) { curF.push({n, k}); prof.foodMem[n] = k; localStorage.setItem('hd_v21_prof', JSON.stringify(prof)); document.getElementById('food-n').value=''; document.getElementById('food-k').value=''; refreshUI(); }
         }
 
         function updateSportFields() {
             const s = JSON.parse(document.getElementById('sport-sel').value || '{}');
             const ui = document.getElementById('sport-input-ui');
-            if(s.u === '組') {
-                ui.innerHTML = `<input type="number" id="sv1" placeholder="下"> 下 × <button class="btn-qty" onclick="vMod('sv2',-1)">-</button> <input type="number" id="sv2" value="1" style="width:50px; text-align:center;"> <button class="btn-qty" onclick="vMod('sv2',1)">+</button> 組`;
-            } else {
-                ui.innerHTML = `<input type="number" id="shr" placeholder="時" style="width:70px;"> 時 <input type="number" id="smin" placeholder="分" style="width:70px;"> 分`;
-            }
+            if(s.u === '組') ui.innerHTML = `<input type="number" id="sv1" placeholder="下"> × <button class="btn-qty" onclick="vMod('sv2',-1)">-</button> <input type="number" id="sv2" value="1" style="width:40px; text-align:center;"> <button class="btn-qty" onclick="vMod('sv2',1)">+</button> 組`;
+            else ui.innerHTML = `<input type="number" id="shr" placeholder="時" style="width:60px;"> 時 <input type="number" id="smin" placeholder="分" style="width:60px;"> 分`;
         }
         function vMod(id, s) { const el = document.getElementById(id); el.value = Math.max(1, Number(el.value) + s); }
 
@@ -228,7 +215,7 @@
             let kcal = 0, disp = "";
             if(sObj.u === '組') {
                 const v1 = Number(document.getElementById('sv1').value), v2 = Number(document.getElementById('sv2').value);
-                kcal = sObj.m * prof.w * (v2 * 3 / 60); disp = `${v1}下 × ${v2}組`;
+                kcal = sObj.m * prof.w * (v2 * 3 / 60); disp = `${v1}下×${v2}組`;
             } else {
                 const h = Number(document.getElementById('shr').value || 0), m = Number(document.getElementById('smin').value || 0);
                 kcal = sObj.m * prof.w * ((h*60+m)/60); disp = `${h}時${m}分`;
@@ -243,25 +230,43 @@
 
         function saveDay() {
             db[selDate] = { food:curF, sports:curS, w1:document.getElementById('w-m').value, w2:document.getElementById('w-n').value, wa:document.getElementById('s-w').value, hi:document.getElementById('s-h').value, le:document.getElementById('s-l').value };
-            localStorage.setItem('hd_v21_db', JSON.stringify(db)); alert("已儲存！"); updateHome(); renderCal();
+            localStorage.setItem('hd_v21_db', JSON.stringify(db)); alert("已儲存"); updateHome(); renderCal();
+        }
+
+        function renderTrend() {
+            const keys = Object.keys(db).sort().slice(-7);
+            if(!keys.length) return;
+            if(wChartObj) wChartObj.destroy();
+            wChartObj = new Chart(document.getElementById('wChart'), { type:'line', data:{ labels:keys, datasets:[{label:'體重', data:keys.map(k=>db[k].w1), borderColor:'#9eb3c2', tension:0.3}] } });
+            
+            if(sChartObj) sChartObj.destroy();
+            sChartObj = new Chart(document.getElementById('sChart'), { 
+                type:'line', 
+                data:{ 
+                    labels:keys, 
+                    datasets:[
+                        {label:'腰', data:keys.map(k=>db[k].wa), borderColor:'#a3b18a', tension:0.3},
+                        {label:'臀', data:keys.map(k=>db[k].hi), borderColor:'#eac4d5', tension:0.3},
+                        {label:'腿', data:keys.map(k=>db[k].le), borderColor:'#e6a27e', tension:0.3}
+                    ] 
+                } 
+            });
         }
 
         function openKcalPie() {
-            const d = db[hDate] || { food:[] };
-            if(!d.food.length) return alert("尚無食物紀錄");
-            document.getElementById('modal-overlay').style.display='flex';
-            document.getElementById('modal-title').innerText="熱量分析";
+            const d = db[hDate] || { food:[] }; if(!d.food.length) return alert("尚無紀錄");
+            document.getElementById('modal-overlay').style.display='flex'; document.getElementById('modal-title').innerText="熱量分析";
             document.getElementById('modalChart').style.display='block';
             const maxK = Math.max(...d.food.map(f=>f.k));
-            document.getElementById('modal-content').innerHTML = d.food.map(f => `<div class="${f.k===maxK?'red-alert':''}">- ${f.n}: ${f.k} kcal ${f.k===maxK?'(最高!)':''}</div>`).join('');
+            document.getElementById('modal-content').innerHTML = d.food.map(f => `<div class="${f.k===maxK?'red-alert':''}">- ${f.n}: ${f.k} kcal</div>`).join('');
             if(mChart) mChart.destroy();
-            mChart = new Chart(document.getElementById('modalChart'), { type:'pie', data:{ labels:d.food.map(f=>f.n), datasets:[{data:d.food.map(f=>f.k), backgroundColor:['#a3b18a','#9eb3c2','#eac4d5','#e6a27e']}] }, options:{ plugins:{ legend:{ display:false } } } });
+            mChart = new Chart(document.getElementById('modalChart'), { type:'pie', data:{ labels:d.food.map(f=>f.n), datasets:[{data:d.food.map(f=>f.k), backgroundColor:['#a3b18a','#9eb3c2','#eac4d5','#e6a27e']}] }, options:{plugins:{legend:{display:false}}}});
         }
 
         function openHomeSport() {
             const d = db[hDate] || { sports:[] };
-            const content = d.sports.length ? d.sports.map(s => `<div>- ${s.n}: ${s.v} (${Math.round(s.k)} kcal)</div>`).join('') : "尚無運動紀錄";
-            openModal("今日運動清單", content);
+            const content = d.sports.length ? d.sports.map(s => `<div>- ${s.n}: ${s.v} (${Math.round(s.k)} kcal)</div>`).join('') : "尚無紀錄";
+            openModal("運動清單", content);
         }
 
         function openModal(t, c) { document.getElementById('modal-overlay').style.display='flex'; document.getElementById('modal-title').innerText=t; document.getElementById('modal-content').innerHTML=c; document.getElementById('modalChart').style.display='none'; }
@@ -270,11 +275,6 @@
         function renderProfile() { document.getElementById('p-h').value=prof.h; document.getElementById('p-w').value=prof.w; document.getElementById('p-bday').value=prof.bday; document.getElementById('cs-manager-ui').innerHTML = prof.sports.map((s,i)=>`<div class="log-item">${s.n} (${s.u}) <b onclick="prof.sports.splice(${i},1);saveProf();renderProfile()">✕</b></div>`).join(''); }
         function saveProf() { prof.h = Number(document.getElementById('p-h').value); prof.w = Number(document.getElementById('p-w').value); prof.bday = document.getElementById('p-bday').value; localStorage.setItem('hd_v21_prof', JSON.stringify(prof)); alert("已儲存"); }
         function addCustomSport() { const n = document.getElementById('cs-name').value; if(n){ prof.sports.push({n, u:document.getElementById('cs-unit').value, m:Number(document.getElementById('cs-met').value)}); saveProf(); renderProfile(); } }
-        function renderTrend() {
-            const keys = Object.keys(db).sort().slice(-7);
-            if(!keys.length) return;
-            new Chart(document.getElementById('wChart'), { type:'line', data:{ labels:keys, datasets:[{label:'體重', data:keys.map(k=>db[k].w1), borderColor:'#9eb3c2'}] } });
-        }
         window.onload = () => { updateHome(); };
     </script>
 </body>
